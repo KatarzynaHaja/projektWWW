@@ -20,7 +20,7 @@
     Login:<br>
     <input type="text" name="login"/><br/>
     Hasło:<br>
-    <input type="password" name="password"/><br/>
+    <input type="password" name="password"/><br/><br/>
     <input type="submit" value="Zaloguj się"/>
 
 </form>
