@@ -44,11 +44,106 @@
             $_SESSION['e_password'] = " Hasła muszą być takie same";
         }
 
-        if($all_ok == true)
+        //Hash password
+
+        $hashed_password = password_hash($password1,PASSWORD_DEFAULT);
+
+        // Check if checkbox tick
+
+        if(isset($_POST['regulations'])==false)
         {
-            echo "Udana rejestracja";
-            exit();
+            $all_ok = false;
+            $_SESSION['e_regulations'] = "Potwierdź akceptacje regulaminu";
         }
+
+        //Bot or not
+
+        $secret_key = "6LfFyxwUAAAAAMYycH7IbrEhQApjh-li31pWqZIn";
+        $check = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$secret_key.'&response='.$_POST['g-recaptcha-response']);
+
+        $answer = json_decode($check);
+
+        if($answer->success == false)
+        {
+            $all_ok = false;
+            $_SESSION['e_bot'] = "Potwierdź, że nie jesteś botem";
+
+        }
+        //Remember date
+        $_SESSION['f_login'] = $login;
+        $_SESSION['f_mail'] = $mail;
+        if(isset($_POST['regulations']))
+        {
+            $_SESSION['f_regulations'] = true;
+        }
+
+
+        //Check if unique
+
+        require_once "connection.php";
+
+        mysqli_report(MYSQLI_REPORT_STRICT);
+        try
+        {
+            $connection = new mysqli($host,$db_user,$db_password,$db_name);
+            if($connection->errno!=0)
+            {
+                throw new Exception(mysqli_connect_errno());
+            }
+            else
+            {
+                // if e- mail exist
+                $result = $connection->query("SELECT id FROM users WHERE mail='$mail'");
+                if($result == false)
+                {
+                    throw new Exception($connection->error);
+                }
+                else
+                {
+                    $numbers_mail = $result->num_rows;
+                    if($numbers_mail > 0)
+                    {
+                        $all_ok = false;
+                        $_SESSION['e_mail'] = "Taki mail istnieje już w bazie";
+                    }
+                }
+                // if login exist
+                $result = $connection->query("SELECT id FROM users WHERE login='$login'");
+                if($result == false)
+                {
+                    throw new Exception($connection->error);
+                }
+                else
+                {
+                    $numbers_login = $result->num_rows;
+                    if($numbers_login > 0)
+                    {
+                        $all_ok = false;
+                        $_SESSION['e_login'] = "Taki login istnieje już w bazie";
+                    }
+                }
+                if($all_ok == true)
+                {
+                   if($connection->query("INSERT INTO users values(NULL,'$login','$hashed_password','$mail')"))
+                   {
+                        $_SESSION['registration_ok'] = true;
+                        header('Location:welcome.php');
+                   }
+                   else
+                   {
+                       throw new Exception($connection->error);
+                   }
+                }
+                $connection->close();
+            }
+        }
+        catch(Exception $e)
+        {
+            // here we should create own side with errors(404)
+            echo "Błąd serwera prosimy o rejestracje w późniejszym terminie!";
+            echo '<br/>'.$e;
+        }
+
     }
 
 ?>
@@ -73,7 +168,12 @@
     <br/><br/>
 
     Login:<br>
-    <input type="text" name="login"/><br/>
+    <input type="text" value ="<?php
+        if(isset($_SESSION['f_login']))
+        {
+            echo $_SESSION['f_login'];
+            unset($_SESSION['f_login']);
+        }?>" name="login"/><br/>
     <?php
         if(isset($_SESSION['e_login']))
         {
@@ -84,7 +184,12 @@
     ?>
 
     E-mail:<br>
-    <input type="text" name="mail"/><br/>
+    <input type="text" value ="<?php
+    if(isset($_SESSION['f_mail']))
+    {
+        echo $_SESSION['f_mail'];
+        unset($_SESSION['f_mail']);
+    }?>"  name="mail"/><br/>
 
     <?php
     if(isset($_SESSION['e_mail']))
@@ -113,10 +218,33 @@
 
 
     <label>
-    <input type="checkbox"/> Akceptuję regulamin <br/><br/>
+    <input type="checkbox"  name="regulations" <?php
+    if(isset($_SESSION['f_regulations']))
+    {
+        echo "checked";
+        unset($_SESSION['f_regulations']);
+    }?> /> Akceptuję regulamin <br/>
     </label>
 
+    <?php
+    if(isset($_SESSION['e_regulations']))
+    {
+        echo '<div class ="error">'.$_SESSION['e_regulations'].'</div>';
+        unset($_SESSION['e_regulations']);
+    }
+
+    ?>
+
     <div class="g-recaptcha" data-sitekey="6LfFyxwUAAAAAGtZgBdxDbGstYuDFz34dAEscOTL"></div><br/>
+
+    <?php
+    if(isset($_SESSION['e_bot']))
+    {
+        echo '<div class ="error">'.$_SESSION['e_bot'].'</div>';
+        unset($_SESSION['e_bot']);
+    }
+
+    ?>
 
     <input type="submit" value="Zarejestruj się"/>
 

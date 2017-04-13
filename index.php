@@ -14,6 +14,8 @@
     <title>Opinie</title>
 </head>
 <body>
+
+<a href="registration.php">Zarejestruj się </a>
 <form action="login.php" method="post">
     <br/><br/>
 

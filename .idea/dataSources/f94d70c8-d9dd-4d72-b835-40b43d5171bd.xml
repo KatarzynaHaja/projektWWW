@@ -4655,7 +4655,7 @@ usergroup</ColNames>
     </column>
     <column id="1006" parent="105" name="password">
       <Position>3</Position>
-      <DataType>varchar(50)|0</DataType>
+      <DataType>varchar(255)|0</DataType>
     </column>
     <column id="1007" parent="105" name="mail">
       <Position>4</Position>
